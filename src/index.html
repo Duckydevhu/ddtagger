@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DuckyTagger</title>
+
+    <style>
+        /* Hover effektus a Beállítások lenyitó sávjához (kis szürkülés, ha fölé viszed az egeret) */
+        #settingsToggle:hover {
+            background-color: #dee2e6;
+        }
+
+        /* Nyelvválasztó gombok alapstílusa.
+          A 'transition: 0.2s' adja azt a szép, lágy átmenetet, amikor rákattintasz.
+        */
+        .lang-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid white;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
+            transition: 0.2s;
+        }
+
+            /* Egeret fölé húzva: 20%-os átlátszóságú fehér háttér */
+            .lang-btn:hover {
+                background: rgba(255,255,255,0.2);
+            }
+
+            /* Ha ez az aktív nyelv (ezt a JavaScript kapcsolgatja): Teli fehér háttér */
+            .lang-btn.active {
+                background: white;
+                color: #264653;
+            }
+
+        /* Egyedi Checkbox stílus. Az 'accent-color' egy modern CSS trükk, amivel
+          a böngésző alapértelmezett kék/szürke pipáját a mi Ducky zöldünkre (#2a9d8f) festjük!
+        */
+        .item-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #2a9d8f;
+            margin-right: 15px;
+            margin-top: 3px;
+        }
+
+        /* Dinamikus állapot-jelző (Badge) színek az AutoSync-hez */
+        .badge-on {
+            color: #2a9d8f;
+            border: 1px solid #2a9d8f;
+        }
+
+        .badge-off {
+            color: #e63946;
+            border: 1px solid #e63946;
+        }
+
+        /* Animáció a Töltősávhoz (Progress Bar).
+          A háttér pozícióját tolja el 40 pixellel, amitől úgy tűnik, mintha a csíkok haladnának.
+        */
+        @keyframes stripes {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 40px 0;
+            }
+        }
+    </style>
+</head>
+
+<body style="margin: 0; background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding-bottom: 80px;">
+
+    <div style="position: sticky; top: 0; z-index: 1000; background-color: #f4f7f6; padding: 10px 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
+
+        <header style="background: #264653; padding: 8px 20px; display: flex; align-items: center; border-radius: 8px; margin-bottom: 10px;">
+            <img src="./dd_logo.webp" alt="Ducky Logo" style="height: 35px; margin-right: 15px; border-radius: 6px;">
+
+            <h1 id="appTitle" style="color: white; margin: 0; font-size: 20px; flex: 1;">DuckyTagger</h1>
+
+            <button id="langHu" class="lang-btn">HU</button>
+            <button id="langEn" class="lang-btn">EN</button>
+        </header>
+
+        <div style="background: #e9ecef; border-radius: 8px; overflow: hidden; margin-bottom: 10px;">
+
+            <div style="padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
+                <div id="settingsToggle" style="display: flex; align-items: center; gap: 15px; cursor: pointer; flex: 1;">
+                    <div style="font-weight: bold; color: #495057; font-size: 14px;">
+                        <span id="settingsTitle"></span>
+                    </div>
+                    <div id="autoSyncBadge" style="font-size: 11px; font-weight: bold; background: white; padding: 3px 8px; border-radius: 12px;" class="badge-off">AutoSync: OFF</div>
+                    <div id="lastSyncBadge" style="font-size: 12px; color: #666; font-weight: 500;"></div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button id="scanBtn" style="padding: 6px 15px; background: #264653; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;"></button>
+                    <div id="settingsArrow" style="color: #495057; font-weight: bold; font-size: 12px; cursor: pointer; padding: 5px;">▼</div>
+                </div>
+            </div>
+
+            <div id="settingsContent" style="display: none; padding: 0 20px 20px 20px;">
+                <hr style="border: 0; height: 1px; background: #ccc; margin-bottom: 15px;">
+
+                <div style="margin-bottom: 15px;">
+                    <label id="dbPathLabel" style="font-size: 12px; color: #666; font-weight: bold; display: block; margin-bottom: 2px;"></label>
+                    <span id="dbPathDisplay" style="font-size: 11px; color: #888; display: block; margin-bottom: 5px;"></span>
+                    <input type="text" id="dbPathInput" style="width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <textarea id="folderInput" rows="3" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; font-family: 'Segoe UI', sans-serif; resize: vertical;"></textarea>
+                </div>
+
+                <div style="background: #dee2e6; padding: 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-weight: bold; font-size: 13px; color: #333; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="autoSyncCheck" style="width: 16px; height: 16px;">
+                        <span id="autoSyncLabel"></span>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="intervalLabel" style="font-size: 12px; color: #666;"></span>
+                        <select id="autoSyncInterval" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                            <option value="15">15 min</option>
+                            <option value="30">30 min</option>
+                            <option value="60">1 h</option>
+                            <option value="240">4 h</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 10px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <span id="searchTitle" style="margin: 0; color: #2a9d8f; font-weight: bold; font-size: 16px; min-width: 120px;"></span>
+
+                <input type="text" id="searchInput" style="flex: 4; min-width: 250px; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; outline: none;">
+                <input type="text" id="extFilter" style="flex: 1; min-width: 90px; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; outline: none;">
+                <select id="sortBy" style="flex: 2; min-width: 150px; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; outline: none; cursor: pointer; background: white;">
+                </select>
+                <button id="executeSearchBtn" style="padding: 10px 20px; background: #2a9d8f; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 100px;"></button>
+            </div>
+        </div>
+
+        <div id="progressContainer" style="display: none; background: white; padding: 12px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #2a9d8f; margin-bottom: 6px;">
+                <span id="progressTextLabel"></span>
+                <span id="progressCount">0</span>
+            </div>
+            <div style="width: 100%; height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden; position: relative;">
+                <div style="width: 100%; height: 100%; background: repeating-linear-gradient(45deg, #2a9d8f, #2a9d8f 15px, #21867a 15px, #21867a 30px); animation: stripes 1s linear infinite;"></div>
+            </div>
+        </div>
+    </div> <main style="padding: 10px 40px 50px 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 id="resultsTitle" style="color: #333; margin: 0;"></h3>
+            <button id="selectAllBtn" style="display: none; padding: 6px 15px; background: #e9ecef; color: #495057; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s;"></button>
+        </div>
+
+        <ul id="fileList" style="list-style: none; padding: 0; margin: 0; word-break: break-all;"></ul>
+    </main>
+
+    <div id="bulkEditPanel" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #264653; padding: 12px 30px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); z-index: 2000; align-items: center; justify-content: space-between; gap: 15px;">
+
+        <div style="color: white; font-weight: bold; font-size: 14px; min-width: 130px;">
+            <span id="selectedCountDisplay">0</span> <span id="selectedCountText"></span>
+        </div>
+
+        <input type="text" id="newTagsInput" style="flex: 1; padding: 8px; border-radius: 4px; border: none; font-size: 13px;">
+
+        <div style="display: flex; gap: 10px;">
+            <button id="applyTagsBtn" style="padding: 8px 16px; background: #2a9d8f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;"></button>
+            <button id="removeTagsBtn" style="padding: 8px 16px; background: #e63946; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;"></button>
+        </div>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+</body>
+</html>
